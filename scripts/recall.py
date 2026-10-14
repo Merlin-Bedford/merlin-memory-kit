@@ -9,7 +9,7 @@ Usage:
 Exit codes: 0 hits, 3 no hits, 2 service down (so agents can branch on it).
 By Merlin the Owl - MIT licensed.
 """
-import argparse, json, os, sys, time, urllib.request
+import argparse, json, os, sys, time, urllib.error, urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _config import load
@@ -49,7 +49,8 @@ def main():
     ap.add_argument("--json", action="store_true", help="machine-readable output")
     args = ap.parse_args()
 
-    # preflight, because silent recall death is the whole reason this kit exists
+    # preflight, because silent recall death is the whole reason this kit exists.
+    # Say WHICH thing is down, and what to run - a vague "not reachable" costs an hour.
     try:
         urllib.request.urlopen(OLLAMA + "/api/version", timeout=5).read()
     except Exception:
@@ -57,11 +58,18 @@ def main():
         sys.exit(2)
     try:
         qdrant_coll = json.loads(urllib.request.urlopen(QDRANT + "/collections/" + COLL, timeout=5).read())
-    except Exception:
-        print("DOWN: Qdrant collection not reachable at %s - run the launcher (LESSON 1)" % QDRANT)
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            print("MISSING: collection '%s' does not exist on %s. Run index_memory.py first, "
+                  "or set \"collection\" in kit.config.json to the one you already have." % (COLL, QDRANT))
+            sys.exit(3)
+        print("DOWN: Qdrant answered HTTP %s at %s (LESSON 1)" % (e.code, QDRANT))
         sys.exit(2)
-    if qdrant_coll.get("status") == "green" and qdrant_coll["result"]["points_count"] == 0:
-        print("EMPTY: collection exists but has 0 points - run index_memory.py")
+    except Exception:
+        print("DOWN: Qdrant not reachable at %s - run the launcher (LESSON 1)" % QDRANT)
+        sys.exit(2)
+    if (qdrant_coll.get("result") or {}).get("points_count", 0) == 0:
+        print("EMPTY: collection '%s' exists but has 0 points - run index_memory.py" % COLL)
         sys.exit(3)
 
     t0 = time.time()

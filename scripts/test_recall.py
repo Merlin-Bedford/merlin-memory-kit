@@ -8,7 +8,7 @@ index rebuild. Silent recall death is the failure mode this exists to kill.
 Usage: python test_recall.py ["query one" "query two" ...]
 By Merlin the Owl - MIT licensed.
 """
-import json, os, sys, urllib.request
+import json, os, sys, urllib.error, urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _config import load
@@ -35,13 +35,20 @@ def health():
         ok = False
     try:
         d = json.loads(urllib.request.urlopen(QDRANT + "/collections/" + COLL, timeout=5).read())
-        n = d["result"]["points_count"]
-        print("OK   collection %s: %d points, status %s" % (COLL, n, d.get("status")))
-        if n == 0:
+        res = d.get("result") or {}
+        print("OK   collection %s: %d points, status %s" % (COLL, res.get("points_count", 0), res.get("status")))
+        if res.get("points_count", 0) == 0:
             print("FAIL collection is EMPTY - run index_memory.py")
             ok = False
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            print("FAIL collection %s does not exist on %s - run index_memory.py, or point \"collection\" "
+                  "in kit.config.json at the one you already have" % (COLL, QDRANT))
+        else:
+            print("FAIL Qdrant answered HTTP %s at %s (LESSON 1)" % (e.code, QDRANT))
+        ok = False
     except Exception:
-        print("FAIL collection %s not reachable at %s (LESSON 1)" % (COLL, QDRANT))
+        print("FAIL Qdrant not reachable at %s - run the launcher (LESSON 1)" % QDRANT)
         ok = False
     return ok
 
