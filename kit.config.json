@@ -1,0 +1,20 @@
+{
+  "qdrant_url": "http://127.0.0.1:6333",
+  "ollama_url": "http://localhost:11434",
+  "embedding_model": "mxbai-embed-large",
+  "vector_size": 1024,
+  "collection": "agent_memory",
+  "workspace_dir": ".",
+  "index_files": [
+    "MEMORY.md",
+    "memory_archive.md",
+    "HEARTBEAT.md",
+    "TOOLS.md",
+    "STATE.md"
+  ],
+  "daily_notes_dir": "memory",
+  "daily_notes_max": 14,
+  "backup_dir": "kit_backups",
+  "backup_keep": 6,
+  "qdrant_snapshot_dir": null
+}

@@ -218,3 +218,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# MERLIN MEMORY KIT
+*.pyc
+kit_backups/
+kit.config.local.json
+.DS_Store
